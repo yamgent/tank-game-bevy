@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use heron::prelude::*;
 
 pub struct TerrainPlugin;
 
@@ -16,9 +17,15 @@ fn setup_terrain(
     let plane = shape::Plane { size: 32. };
     let color = Color::GREEN;
 
-    commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(plane.into()),
-        material: materials.add(color.into()),
-        ..Default::default()
-    });
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(plane.into()),
+            material: materials.add(color.into()),
+            ..Default::default()
+        })
+        .insert(RigidBody::Static)
+        .insert(CollisionShape::Cuboid {
+            half_extends: Vec3::new(16.0, 1.0, 16.0),
+            border_radius: None,
+        });
 }
