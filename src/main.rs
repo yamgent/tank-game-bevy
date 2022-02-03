@@ -1,12 +1,14 @@
+mod game_camera;
+mod terrain;
+
+use crate::game_camera::GameCameraPlugin;
+use crate::terrain::TerrainPlugin;
 use bevy::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_system(hello_world_system)
+        .add_plugin(GameCameraPlugin)
+        .add_plugin(TerrainPlugin)
         .run();
-}
-
-fn hello_world_system() {
-    println!("Hello world!");
 }
