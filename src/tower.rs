@@ -47,7 +47,7 @@ fn spawn_tower(
                 .map(|i| (i, cube.clone(), cube_material.clone()))
                 .for_each({
                     move |(i, cube, cube_material)| {
-                        let y = (i as f32) * CUBE_SIZE;
+                        let y = (i as f32) * CUBE_SIZE + 0.5;
 
                         let mut section = parent.spawn();
 
@@ -77,6 +77,7 @@ fn spawn_tower(
                             .insert(PhysicMaterial {
                                 restitution: 0.0,
                                 density: 1500.0,
+                                friction: 1.0,
                                 ..Default::default()
                             })
                             .insert(
