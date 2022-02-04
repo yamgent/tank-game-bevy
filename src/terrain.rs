@@ -11,7 +11,7 @@ impl Plugin for TerrainPlugin {
     }
 }
 
-const TERRAIN_SIZE: f32 = 512.0;
+pub const TERRAIN_SIZE: f32 = 256.0;
 
 fn setup_terrain(
     mut commands: Commands,

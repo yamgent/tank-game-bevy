@@ -21,8 +21,8 @@ const CUBE_SIZE: f32 = 4.0;
 const SHOOT_INTERVAL: f32 = 2.0;
 
 #[derive(Component)]
-struct TowerHead {
-    alive: bool,
+pub struct TowerHead {
+    pub alive: bool,
     initial_y: f32,
     shoot_time: f32,
 }
@@ -127,7 +127,7 @@ fn update_alive_status(
         |(mut head, transform, mut material)| {
             if transform.translation.y < head.initial_y - CUBE_SIZE * 2.0 {
                 head.alive = false;
-                *material = materials.add(Color::RED.into());
+                *material = materials.add(Color::GRAY.into());
             }
         },
     );

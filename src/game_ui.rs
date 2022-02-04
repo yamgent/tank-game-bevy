@@ -1,17 +1,33 @@
 use bevy::prelude::*;
 
+use crate::{player::Player, terrain::TERRAIN_SIZE, tower::TowerHead};
+
 pub struct GameUiPlugin;
 
 impl Plugin for GameUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PlayerHealthUpdated>()
             .add_startup_system(setup_ui)
-            .add_system(handle_health_updated);
+            .add_system(handle_health_updated)
+            .add_system(update_player_dot)
+            .add_system(ensure_enough_tower_dots)
+            .add_system(update_tower_dots);
     }
 }
 
+const MAP_COORD: (f32, f32) = (15.0, 50.0);
+const MAP_SIZE: (f32, f32) = (160.0, 160.0);
+
+const POS_DOT_SIZE: (f32, f32) = (8.0, 8.0);
+
 #[derive(Component)]
 struct HealthText;
+
+#[derive(Component)]
+struct MapPlayerDot;
+
+#[derive(Component)]
+struct MapTowerDot;
 
 pub struct PlayerHealthUpdated(pub i32);
 
@@ -55,6 +71,48 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..Default::default()
         })
         .insert(HealthText);
+
+    let map_enclosure = asset_server.load("map_enclosure.png");
+
+    commands.spawn_bundle(ImageBundle {
+        image: UiImage(map_enclosure),
+        style: Style {
+            position_type: PositionType::Absolute,
+            position: Rect {
+                top: Val::Px(MAP_COORD.1),
+                left: Val::Px(MAP_COORD.0),
+                ..Default::default()
+            },
+            size: Size {
+                width: Val::Px(MAP_SIZE.0),
+                height: Val::Px(MAP_SIZE.1),
+            },
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+
+    let map_dot = asset_server.load("map_dot.png");
+    commands
+        .spawn_bundle(ImageBundle {
+            image: UiImage(map_dot),
+            color: Color::BLUE.into(),
+            style: Style {
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    top: Val::Px(MAP_COORD.1),
+                    left: Val::Px(MAP_COORD.0),
+                    ..Default::default()
+                },
+                size: Size {
+                    width: Val::Px(POS_DOT_SIZE.0),
+                    height: Val::Px(POS_DOT_SIZE.1),
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(MapPlayerDot);
 }
 
 fn handle_health_updated(
@@ -66,4 +124,78 @@ fn handle_health_updated(
     events.iter().for_each(|event| {
         text.sections[1].value = event.0.to_string();
     });
+}
+
+fn update_player_dot(
+    mut query: Query<&mut Style, With<MapPlayerDot>>,
+    player_query: Query<&Transform, With<Player>>,
+) {
+    let player_transform = player_query.single();
+    let mut ui = query.single_mut();
+
+    let player = (
+        (player_transform.translation.x + (TERRAIN_SIZE / 2.0)) / TERRAIN_SIZE,
+        (player_transform.translation.z + (TERRAIN_SIZE / 2.0)) / TERRAIN_SIZE,
+    );
+
+    ui.position.top = Val::Px(MAP_COORD.1 + MAP_SIZE.1 * player.1);
+    ui.position.left = Val::Px(MAP_COORD.0 + MAP_SIZE.0 * player.0);
+}
+
+fn ensure_enough_tower_dots(
+    query: Query<&MapTowerDot>,
+    tower_query: Query<&TowerHead>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+) {
+    let mut dots_count = query.iter().count();
+    let towers_count = tower_query.iter().count();
+
+    while dots_count < towers_count {
+        let map_dot = asset_server.load("map_dot.png");
+        dots_count += 1;
+
+        commands
+            .spawn_bundle(ImageBundle {
+                image: UiImage(map_dot),
+                color: Color::RED.into(),
+                style: Style {
+                    position_type: PositionType::Absolute,
+                    position: Rect {
+                        top: Val::Px(MAP_COORD.1),
+                        left: Val::Px(MAP_COORD.0),
+                        ..Default::default()
+                    },
+                    size: Size {
+                        width: Val::Px(POS_DOT_SIZE.0),
+                        height: Val::Px(POS_DOT_SIZE.1),
+                    },
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .insert(MapTowerDot);
+    }
+}
+
+fn update_tower_dots(
+    mut query: Query<(&mut Style, &mut UiColor), With<MapTowerDot>>,
+    tower_query: Query<(&Transform, &TowerHead)>,
+) {
+    tower_query.iter().zip(query.iter_mut()).for_each(
+        |((tower_transform, tower_head), (mut ui, mut color))| {
+            let tower = (
+                (tower_transform.translation.x + (TERRAIN_SIZE / 2.0)) / TERRAIN_SIZE,
+                (tower_transform.translation.z + (TERRAIN_SIZE / 2.0)) / TERRAIN_SIZE,
+            );
+
+            ui.position.top = Val::Px(MAP_COORD.1 + MAP_SIZE.1 * tower.1);
+            ui.position.left = Val::Px(MAP_COORD.0 + MAP_SIZE.0 * tower.0);
+            *color = if tower_head.alive {
+                Color::RED.into()
+            } else {
+                Color::GRAY.into()
+            };
+        },
+    );
 }
