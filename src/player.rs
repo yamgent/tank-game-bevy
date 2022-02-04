@@ -20,7 +20,8 @@ impl Plugin for PlayerPlugin {
             .add_system(handle_player_aim)
             .add_system(handle_player_hit)
             .add_system(handle_player_shoot_input)
-            .add_system(handle_player_hit_recovery);
+            .add_system(handle_player_hit_recovery)
+            .add_system(shoot_cooldown);
     }
 }
 
@@ -29,11 +30,13 @@ const MOVING_SPEED: f32 = 200.0;
 const INITIAL_HEALTH: i32 = 10;
 const PLAYER_SIZE: (f32, f32, f32) = (8.0, 3.0, 4.0);
 const HIT_DISABLE_TIME: f32 = 2.0;
+const SHOOT_COOLDOWN: f32 = 3.0;
 
 #[derive(Component)]
 pub struct Player {
     health: i32,
     hit_recovery: f32,
+    pub shoot_cooldown: f32,
 }
 
 #[derive(Component)]
@@ -78,6 +81,7 @@ fn setup_player(
         .insert(Player {
             health: INITIAL_HEALTH,
             hit_recovery: 0.0,
+            shoot_cooldown: 0.0,
         })
         .insert(MovementInputDirection(Vec3::ZERO))
         .insert(AimInputDirection(Vec3::ZERO))
@@ -244,13 +248,13 @@ fn handle_player_aim(
 
 fn handle_player_shoot_input(
     mouse: Res<Input<MouseButton>>,
-    query: Query<(&Transform, &AimInputDirection)>,
+    mut query: Query<(&Transform, &AimInputDirection, &mut Player)>,
     mut commands: Commands,
     bullet_assets: Res<BulletAssets>,
 ) {
-    let (transform, aim) = query.single();
+    let (transform, aim, mut player) = query.single_mut();
 
-    if mouse.just_pressed(MouseButton::Left) {
+    if mouse.just_pressed(MouseButton::Left) && player.shoot_cooldown <= 0.1 {
         let aim = Vec3::new(aim.0.x, 0.0, -aim.0.z);
         let offset = aim * PLAYER_SIZE.0.max(PLAYER_SIZE.2);
 
@@ -261,6 +265,7 @@ fn handle_player_shoot_input(
             aim,
             BulletType::Player,
         );
+        player.shoot_cooldown = SHOOT_COOLDOWN;
     }
 }
 
@@ -268,4 +273,10 @@ fn handle_player_hit_recovery(time: Res<Time>, mut query: Query<&mut Player>) {
     let mut player = query.single_mut();
 
     player.hit_recovery = 0f32.max(player.hit_recovery - time.delta_seconds());
+}
+
+fn shoot_cooldown(time: Res<Time>, mut query: Query<&mut Player>) {
+    let mut player = query.single_mut();
+
+    player.shoot_cooldown = 0f32.max(player.shoot_cooldown - time.delta_seconds());
 }

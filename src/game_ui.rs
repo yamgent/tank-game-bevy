@@ -11,7 +11,8 @@ impl Plugin for GameUiPlugin {
             .add_system(handle_health_updated)
             .add_system(update_player_dot)
             .add_system(ensure_enough_tower_dots)
-            .add_system(update_tower_dots);
+            .add_system(update_tower_dots)
+            .add_system(update_cannon_status);
     }
 }
 
@@ -28,6 +29,9 @@ struct MapPlayerDot;
 
 #[derive(Component)]
 struct MapTowerDot;
+
+#[derive(Component)]
+struct CannonText;
 
 pub struct PlayerHealthUpdated(pub i32);
 
@@ -51,7 +55,7 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                     TextSection {
                         value: "0".to_string(),
                         style: TextStyle {
-                            font,
+                            font: font.clone(),
                             font_size: 40.0,
                             color: Color::BLACK,
                         },
@@ -71,6 +75,35 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..Default::default()
         })
         .insert(HealthText);
+
+    commands
+        .spawn_bundle(TextBundle {
+            text: Text {
+                sections: vec![TextSection {
+                    value: "Cannon READY".to_string(),
+                    style: TextStyle {
+                        font: font.clone(),
+                        font_size: 20.0,
+                        color: Color::BLACK,
+                    },
+                }],
+                alignment: TextAlignment {
+                    horizontal: HorizontalAlign::Center,
+                    vertical: VerticalAlign::Center,
+                },
+            },
+            style: Style {
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    top: Val::Percent(45.0),
+                    left: Val::Percent(50.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(CannonText);
 
     let map_enclosure = asset_server.load("map_enclosure.png");
 
@@ -124,6 +157,26 @@ fn handle_health_updated(
     events.iter().for_each(|event| {
         text.sections[1].value = event.0.to_string();
     });
+}
+
+fn update_cannon_status(
+    player_query: Query<&Player>,
+    mut query: Query<&mut Text, With<CannonText>>,
+) {
+    let player = player_query.single();
+    let mut text = query.single_mut();
+
+    let (value, color) = if player.shoot_cooldown >= 0.1 {
+        (
+            format!("{}", player.shoot_cooldown.floor().to_string()),
+            Color::RED,
+        )
+    } else {
+        ("Cannon READY".to_string(), Color::BLACK)
+    };
+
+    text.sections[0].value = value;
+    text.sections[0].style.color = color;
 }
 
 fn update_player_dot(
