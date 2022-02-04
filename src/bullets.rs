@@ -1,4 +1,4 @@
-use crate::game_layer::GameLayer;
+use crate::{game_layer::GameLayer, player::PlayerHit};
 use bevy::prelude::*;
 use heron::prelude::*;
 
@@ -8,7 +8,8 @@ impl Plugin for BulletPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup_bullet)
             .add_system(move_bullets)
-            .add_system(auto_despawn_bullets);
+            .add_system(auto_despawn_bullets)
+            .add_system(handle_bullets_collisions);
     }
 }
 
@@ -106,4 +107,28 @@ fn auto_despawn_bullets(
     });
 }
 
-// TODO: Collision detection with player
+fn handle_bullets_collisions(
+    mut events: EventReader<CollisionEvent>,
+    mut player_hit: EventWriter<PlayerHit>,
+    mut commands: Commands,
+) {
+    events.iter().for_each(|event| {
+        if let CollisionEvent::Started(data1, data2) = event {
+            let datas = if data1.collision_layers().contains_group(GameLayer::Bullet) {
+                Some((data1, data2))
+            } else if data2.collision_layers().contains_group(GameLayer::Bullet) {
+                Some((data2, data1))
+            } else {
+                None
+            };
+
+            if let Some((bullet, other)) = datas {
+                if other.collision_layers().contains_group(GameLayer::Player) {
+                    player_hit.send(PlayerHit);
+                }
+
+                commands.entity(bullet.rigid_body_entity()).despawn();
+            }
+        }
+    });
+}

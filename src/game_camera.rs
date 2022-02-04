@@ -11,8 +11,13 @@ impl Plugin for GameCameraPlugin {
     }
 }
 
+#[derive(Component)]
+struct ViewCamera;
+
 fn setup_camera(mut commands: Commands) {
-    commands.spawn_bundle(PerspectiveCameraBundle::new_3d());
+    commands
+        .spawn_bundle(PerspectiveCameraBundle::new_3d())
+        .insert(ViewCamera);
 
     // TODO: Better place to put light?
     commands.spawn_bundle(DirectionalLightBundle {
@@ -28,8 +33,8 @@ fn setup_camera(mut commands: Commands) {
 }
 
 fn look_at_player(
-    mut query: Query<&mut Transform, With<Camera>>,
-    player_query: Query<&Transform, (With<Player>, Without<Camera>)>,
+    mut query: Query<&mut Transform, With<ViewCamera>>,
+    player_query: Query<&Transform, (With<Player>, Without<ViewCamera>)>,
 ) {
     let mut transform = query.single_mut();
     let player_transform = player_query.single();

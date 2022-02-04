@@ -2,28 +2,39 @@ use bevy::prelude::*;
 use heron::prelude::*;
 use std::f32::consts::PI;
 
-use crate::game_layer::GameLayer;
+use crate::{game_layer::GameLayer, game_ui::PlayerHealthUpdated};
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_player)
+        app.add_event::<PlayerHit>()
+            .add_startup_system(setup_player)
             .add_system(handle_player_input)
-            .add_system(handle_player_movement);
+            .add_system(handle_player_movement)
+            .add_system(handle_player_hit);
     }
 }
 
 const ROTATION_SPEED: f32 = 0.2;
 const MOVING_SPEED: f32 = 200.0;
+const INITIAL_HEALTH: i32 = 10;
 
 #[derive(Component)]
-pub struct Player;
+pub struct Player {
+    health: i32,
+}
 
 #[derive(Component)]
 struct InputDirection(Vec3);
 
-fn setup_player(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub struct PlayerHit;
+
+fn setup_player(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut health_updated: EventWriter<PlayerHealthUpdated>,
+) {
     commands
         .spawn_bundle((
             Transform {
@@ -42,7 +53,9 @@ fn setup_player(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..Default::default()
         })
         .insert(Velocity::default())
-        .insert(Player)
+        .insert(Player {
+            health: INITIAL_HEALTH,
+        })
         .insert(InputDirection(Vec3::ZERO))
         .with_children(|parent| {
             parent
@@ -62,6 +75,8 @@ fn setup_player(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .with_group(GameLayer::Player)
                 .with_masks(&[GameLayer::Bullet, GameLayer::Tower, GameLayer::World]),
         );
+
+    health_updated.send(PlayerHealthUpdated(INITIAL_HEALTH));
 }
 
 fn handle_player_input(
@@ -139,4 +154,17 @@ fn handle_player_movement(
             delta_angle * 360.0 * ROTATION_SPEED * time.delta_seconds(),
         );
     }
+}
+
+fn handle_player_hit(
+    mut query: Query<&mut Player>,
+    mut events: EventReader<PlayerHit>,
+    mut health_updated: EventWriter<PlayerHealthUpdated>,
+) {
+    let mut player = query.single_mut();
+
+    events.iter().for_each(|_| {
+        player.health -= 1;
+        health_updated.send(PlayerHealthUpdated(player.health));
+    });
 }
