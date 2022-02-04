@@ -141,13 +141,13 @@ fn handle_player_movement(
     if dir.0.x != 0.0 || dir.0.z != 0.0 {
         // TODO: See whether we can improve this system
         // Problem 1: When in the target direction, the turning can overshoot and cause jittering
-        // Problem 2: If the tank is rotated wildly (e.g when falling off the map), the tank speed
-        // suddenly becomes very fast, which can crash the physics engine
         let facing_direction = transform.local_x();
 
-        velocity.linear = Vec3::new(facing_direction.x, velocity.linear.y, facing_direction.z)
-            * MOVING_SPEED
-            * time.delta_seconds();
+        velocity.linear = Vec3::new(
+            facing_direction.x * MOVING_SPEED * time.delta_seconds(),
+            velocity.linear.y,
+            facing_direction.z * MOVING_SPEED * time.delta_seconds(),
+        );
 
         let facing_direction = facing_direction.z.atan2(facing_direction.x);
         let target_direction = dir.0.z.atan2(dir.0.x);
