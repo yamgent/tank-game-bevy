@@ -73,6 +73,12 @@ fn spawn_tower(
                                 ),
                                 border_radius: None,
                             })
+                            .insert(Velocity::default())
+                            .insert(PhysicMaterial {
+                                restitution: 0.0,
+                                density: 1500.0,
+                                ..Default::default()
+                            })
                             .insert(
                                 CollisionLayers::none()
                                     .with_group(GameLayer::Tower)

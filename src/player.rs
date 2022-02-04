@@ -67,6 +67,7 @@ fn setup_player(
             border_radius: None,
         })
         .insert(PhysicMaterial {
+            restitution: 0.0,
             density: 2000.0,
             ..Default::default()
         })

@@ -14,6 +14,9 @@ impl Plugin for BulletPlugin {
 }
 
 const BULLET_SIZE_RADIUS: f32 = 1.0;
+const EXPLODE_RADIUS: f32 = 20.0;
+const EXPLODE_POWER: f32 = 100.0; // at zero range, this is the power
+
 const BULLET_SPEED: f32 = 12.0;
 const BULLET_LIFE: f32 = 30.0; // in case it goes out of range
 
@@ -137,6 +140,8 @@ fn handle_bullets_collisions(
     mut events: EventReader<CollisionEvent>,
     mut player_hit: EventWriter<PlayerHit>,
     mut commands: Commands,
+    mut explode_query: Query<&mut Velocity>,
+    positions: Query<&Transform>,
 ) {
     events.iter().for_each(|event| {
         if let CollisionEvent::Started(data1, data2) = event {
@@ -153,8 +158,31 @@ fn handle_bullets_collisions(
                     player_hit.send(PlayerHit);
                 }
 
-                commands.entity(bullet.rigid_body_entity()).despawn();
+                let bullet_entity = bullet.rigid_body_entity();
+                let other_entity = other.rigid_body_entity();
+
+                let bullet_pos = positions.get(bullet_entity).unwrap();
+                let other_pos = positions.get(other_entity).unwrap();
+
+                add_explode_force(
+                    &mut explode_query,
+                    &other_entity,
+                    other_pos.translation - bullet_pos.translation,
+                );
+
+                commands.entity(bullet_entity).despawn();
             }
         }
     });
+}
+
+fn add_explode_force(query: &mut Query<&mut Velocity>, entity: &Entity, direction: Vec3) {
+    if direction.length_squared() > EXPLODE_RADIUS * EXPLODE_RADIUS {
+        return;
+    }
+
+    if let Ok(mut velocity) = query.get_mut(*entity) {
+        let power = ((EXPLODE_RADIUS - direction.length()) / EXPLODE_RADIUS) * EXPLODE_POWER;
+        velocity.linear += direction.normalize() * power;
+    }
 }
