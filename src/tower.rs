@@ -19,6 +19,7 @@ impl Plugin for TowerPlugin {
 
 const CUBE_SIZE: f32 = 4.0;
 const SHOOT_INTERVAL: f32 = 2.0;
+const TOWER_PLAYER_MIN_DISTANCE: f32 = 40.0;
 
 #[derive(Component)]
 pub struct TowerHead {
@@ -111,12 +112,26 @@ fn setup_towers(
     let cube = meshes.add(shape::Cube { size: CUBE_SIZE }.into());
     let cube_material = materials.add(Color::WHITE.into());
 
-    spawn_tower(
-        &mut commands,
+    [
         Vec3::new(10.0, 0.0, 10.0),
-        cube,
-        cube_material,
-    );
+        Vec3::new(40.0, 0.0, 10.0),
+        Vec3::new(70.0, 0.0, 40.0),
+        Vec3::new(-20.0, 0.0, -80.0),
+        Vec3::new(-30.0, 0.0, -60.0),
+        Vec3::new(-20.0, 0.0, -60.0),
+        Vec3::new(-30.0, 0.0, -80.0),
+        Vec3::new(-30.0, 0.0, 110.0),
+        Vec3::new(-40.0, 0.0, 80.0),
+        Vec3::new(-45.0, 0.0, 70.0),
+        Vec3::new(80.0, 0.0, -30.0),
+        Vec3::new(-60.0, 0.0, -90.0),
+        Vec3::new(100.0, 0.0, 95.0),
+        Vec3::new(-95.0, 0.0, -10.0),
+    ]
+    .into_iter()
+    .for_each(|pos| {
+        spawn_tower(&mut commands, pos, cube.clone(), cube_material.clone());
+    });
 }
 
 fn update_alive_status(
@@ -152,15 +167,18 @@ fn shoot_bullets(
                 head.shoot_time = SHOOT_INTERVAL;
 
                 let direction = player_transform.translation - transform.translation;
-                let offset = Vec3::new(direction.normalize().x, 0.0, direction.normalize().z);
 
-                crate::bullets::spawn_bullet(
-                    &mut commands,
-                    &bullet_assets,
-                    transform.translation + (offset * CUBE_SIZE * 1.25),
-                    direction,
-                    BulletType::Tower,
-                );
+                if direction.length() < TOWER_PLAYER_MIN_DISTANCE {
+                    let offset = Vec3::new(direction.normalize().x, 0.0, direction.normalize().z);
+
+                    crate::bullets::spawn_bullet(
+                        &mut commands,
+                        &bullet_assets,
+                        transform.translation + (offset * CUBE_SIZE * 1.25),
+                        direction,
+                        BulletType::Tower,
+                    );
+                }
             }
         });
 }

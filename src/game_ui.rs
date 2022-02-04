@@ -180,7 +180,7 @@ fn ensure_enough_tower_dots(
 
 fn update_tower_dots(
     mut query: Query<(&mut Style, &mut UiColor), With<MapTowerDot>>,
-    tower_query: Query<(&Transform, &TowerHead)>,
+    tower_query: Query<(&GlobalTransform, &TowerHead)>,
 ) {
     tower_query.iter().zip(query.iter_mut()).for_each(
         |((tower_transform, tower_head), (mut ui, mut color))| {
