@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use heron::prelude::*;
 
+use crate::game_layer::GameLayer;
+
 pub struct TerrainPlugin;
 
 impl Plugin for TerrainPlugin {
@@ -35,5 +37,10 @@ fn setup_terrain(
         .insert(CollisionShape::Cuboid {
             half_extends: Vec3::new(TERRAIN_SIZE / 2.0, 1.0, TERRAIN_SIZE / 2.0),
             border_radius: None,
-        });
+        })
+        .insert(
+            CollisionLayers::none()
+                .with_group(GameLayer::World)
+                .with_masks(&[GameLayer::Player, GameLayer::Tower, GameLayer::Bullet]),
+        );
 }

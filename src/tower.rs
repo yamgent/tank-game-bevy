@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use heron::prelude::*;
 
-use crate::{bullets::BulletAssets, player::Player};
+use crate::{bullets::BulletAssets, game_layer::GameLayer, player::Player};
 
 pub struct TowerPlugin;
 
@@ -68,7 +68,17 @@ fn spawn_tower(
                                     CUBE_SIZE / 2.0,
                                 ),
                                 border_radius: None,
-                            });
+                            })
+                            .insert(
+                                CollisionLayers::none()
+                                    .with_group(GameLayer::Tower)
+                                    .with_masks(&[
+                                        GameLayer::Player,
+                                        GameLayer::World,
+                                        GameLayer::Bullet,
+                                        GameLayer::Tower,
+                                    ]),
+                            );
 
                         if i == total_height - 1 {
                             section.insert(TowerHead {

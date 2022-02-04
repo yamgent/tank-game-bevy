@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use heron::prelude::*;
 use std::f32::consts::PI;
 
+use crate::game_layer::GameLayer;
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -54,7 +56,12 @@ fn setup_player(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .with_children(|gparent| {
                     gparent.spawn_scene(asset_server.load("tank_barrel.glb#Scene0"));
                 });
-        });
+        })
+        .insert(
+            CollisionLayers::none()
+                .with_group(GameLayer::Player)
+                .with_masks(&[GameLayer::Bullet, GameLayer::Tower, GameLayer::World]),
+        );
 }
 
 fn handle_player_input(

@@ -1,5 +1,6 @@
 mod bullets;
 mod game_camera;
+mod game_layer;
 mod player;
 mod terrain;
 mod tower;

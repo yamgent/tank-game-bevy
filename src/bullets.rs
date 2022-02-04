@@ -1,3 +1,4 @@
+use crate::game_layer::GameLayer;
 use bevy::prelude::*;
 use heron::prelude::*;
 
@@ -77,7 +78,12 @@ pub fn spawn_bullet(
         })
         .insert(AutoDespawn {
             time_left: BULLET_LIFE,
-        });
+        })
+        .insert(
+            CollisionLayers::none()
+                .with_group(GameLayer::Bullet)
+                .with_masks(&[GameLayer::Player, GameLayer::World]),
+        );
 }
 
 fn move_bullets(time: Res<Time>, mut query: Query<(&mut Transform, &Move)>) {
