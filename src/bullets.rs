@@ -141,7 +141,7 @@ fn handle_bullets_collisions(
     mut player_hit: EventWriter<PlayerHit>,
     mut commands: Commands,
     mut explode_query: Query<&mut Velocity>,
-    positions: Query<&Transform>,
+    positions: Query<&GlobalTransform>,
 ) {
     events.iter().for_each(|event| {
         if let CollisionEvent::Started(data1, data2) = event {
