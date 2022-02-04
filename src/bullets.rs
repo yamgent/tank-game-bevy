@@ -14,7 +14,7 @@ impl Plugin for BulletPlugin {
 }
 
 const BULLET_SIZE_RADIUS: f32 = 1.0;
-const EXPLODE_RADIUS: f32 = 20.0;
+const EXPLODE_RADIUS: f32 = 30.0;
 const EXPLODE_POWER: f32 = 25.0; // at zero range, this is the power
 
 const BULLET_SPEED: f32 = 12.0;
