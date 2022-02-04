@@ -19,7 +19,8 @@ impl Plugin for PlayerPlugin {
             .add_system(handle_player_aim_input)
             .add_system(handle_player_aim)
             .add_system(handle_player_hit)
-            .add_system(handle_player_shoot_input);
+            .add_system(handle_player_shoot_input)
+            .add_system(handle_player_hit_recovery);
     }
 }
 
@@ -27,10 +28,12 @@ const ROTATION_SPEED: f32 = 0.2;
 const MOVING_SPEED: f32 = 200.0;
 const INITIAL_HEALTH: i32 = 10;
 const PLAYER_SIZE: (f32, f32, f32) = (8.0, 3.0, 4.0);
+const HIT_DISABLE_TIME: f32 = 2.0;
 
 #[derive(Component)]
 pub struct Player {
     health: i32,
+    hit_recovery: f32,
 }
 
 #[derive(Component)]
@@ -74,6 +77,7 @@ fn setup_player(
         .insert(Velocity::default())
         .insert(Player {
             health: INITIAL_HEALTH,
+            hit_recovery: 0.0,
         })
         .insert(MovementInputDirection(Vec3::ZERO))
         .insert(AimInputDirection(Vec3::ZERO))
@@ -134,9 +138,14 @@ fn handle_player_movement_input(
 
 fn handle_player_movement(
     time: Res<Time>,
-    mut query: Query<(&MovementInputDirection, &mut Velocity, &Transform), With<Player>>,
+    mut query: Query<(&MovementInputDirection, &mut Velocity, &Transform, &Player)>,
 ) {
-    let (dir, mut velocity, transform) = query.single_mut();
+    let (dir, mut velocity, transform, player) = query.single_mut();
+
+    if player.hit_recovery > 0.1 {
+        // tank is disabled
+        return;
+    }
 
     if dir.0.x != 0.0 || dir.0.z != 0.0 {
         // TODO: See whether we can improve this system
@@ -188,6 +197,7 @@ fn handle_player_hit(
 
     events.iter().for_each(|_| {
         player.health -= 1;
+        player.hit_recovery = HIT_DISABLE_TIME;
 
         if player.health < 0 {
             player.health = 0;
@@ -252,4 +262,10 @@ fn handle_player_shoot_input(
             BulletType::Player,
         );
     }
+}
+
+fn handle_player_hit_recovery(time: Res<Time>, mut query: Query<&mut Player>) {
+    let mut player = query.single_mut();
+
+    player.hit_recovery = 0f32.max(player.hit_recovery - time.delta_seconds());
 }
