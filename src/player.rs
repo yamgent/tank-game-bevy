@@ -16,7 +16,7 @@ const ROTATION_SPEED: f32 = 0.2;
 const MOVING_SPEED: f32 = 200.0;
 
 #[derive(Component)]
-struct Player;
+pub struct Player;
 
 #[derive(Component)]
 struct InputDirection(Vec3);

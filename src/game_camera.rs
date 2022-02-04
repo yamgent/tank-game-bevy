@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::player::Player;
+
 pub struct GameCameraPlugin;
 
 impl Plugin for GameCameraPlugin {
@@ -25,9 +27,14 @@ fn setup_camera(mut commands: Commands) {
     });
 }
 
-fn look_at_player(mut query: Query<&mut Transform, With<Camera>>) {
-    // TODO: Actually look at player
+fn look_at_player(
+    mut query: Query<&mut Transform, With<Camera>>,
+    player_query: Query<&Transform, (With<Player>, Without<Camera>)>,
+) {
     let mut transform = query.single_mut();
-    *transform = Transform::from_translation(Vec3::new(0.0, 20.0, 30.0))
-        .looking_at(Vec3::ZERO, Vec3::new(0.0, 1.0, 0.0));
+    let player_transform = player_query.single();
+
+    *transform =
+        Transform::from_translation(player_transform.translation + Vec3::new(0.0, 60.0, 60.0))
+            .looking_at(player_transform.translation, Vec3::new(0.0, 1.0, 0.0));
 }
