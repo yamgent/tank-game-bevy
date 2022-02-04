@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use heron::prelude::*;
 use std::f32::consts::PI;
 
-use crate::{game_layer::GameLayer, game_ui::PlayerHealthUpdated};
+use crate::{bullets::BulletAssets, game_layer::GameLayer, game_ui::PlayerHealthUpdated};
 
 pub struct PlayerPlugin;
 
@@ -14,13 +14,15 @@ impl Plugin for PlayerPlugin {
             .add_system(handle_player_movement)
             .add_system(handle_player_aim_input)
             .add_system(handle_player_aim)
-            .add_system(handle_player_hit);
+            .add_system(handle_player_hit)
+            .add_system(handle_player_shoot_input);
     }
 }
 
 const ROTATION_SPEED: f32 = 0.2;
 const MOVING_SPEED: f32 = 200.0;
 const INITIAL_HEALTH: i32 = 10;
+const PLAYER_SIZE: (f32, f32, f32) = (8.0, 3.0, 4.0);
 
 #[derive(Component)]
 pub struct Player {
@@ -53,7 +55,11 @@ fn setup_player(
         ))
         .insert(RigidBody::Dynamic)
         .insert(CollisionShape::Cuboid {
-            half_extends: Vec3::new(4.0, 1.5, 2.0),
+            half_extends: Vec3::new(
+                PLAYER_SIZE.0 / 2.0,
+                PLAYER_SIZE.1 / 2.0,
+                PLAYER_SIZE.2 / 2.0,
+            ),
             border_radius: None,
         })
         .insert(PhysicMaterial {
@@ -219,4 +225,25 @@ fn handle_player_aim(
 
         transform.rotation = Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), angle + parent_angle);
     });
+}
+
+fn handle_player_shoot_input(
+    mouse: Res<Input<MouseButton>>,
+    query: Query<(&Transform, &AimInputDirection)>,
+    mut commands: Commands,
+    bullet_assets: Res<BulletAssets>,
+) {
+    let (transform, aim) = query.single();
+
+    if mouse.just_pressed(MouseButton::Left) {
+        let aim = Vec3::new(aim.0.x, 0.0, -aim.0.z);
+        let offset = aim * PLAYER_SIZE.0.max(PLAYER_SIZE.2);
+
+        crate::bullets::spawn_bullet(
+            &mut commands,
+            &bullet_assets,
+            transform.translation + offset,
+            aim,
+        );
+    }
 }
