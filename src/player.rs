@@ -10,8 +10,10 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PlayerHit>()
             .add_startup_system(setup_player)
-            .add_system(handle_player_input)
+            .add_system(handle_player_movement_input)
             .add_system(handle_player_movement)
+            .add_system(handle_player_aim_input)
+            .add_system(handle_player_aim)
             .add_system(handle_player_hit);
     }
 }
@@ -26,9 +28,15 @@ pub struct Player {
 }
 
 #[derive(Component)]
-struct InputDirection(Vec3);
+struct MovementInputDirection(Vec3);
 
 pub struct PlayerHit;
+
+#[derive(Component)]
+struct AimInputDirection(Vec3);
+
+#[derive(Component)]
+struct TankTop;
 
 fn setup_player(
     mut commands: Commands,
@@ -56,13 +64,17 @@ fn setup_player(
         .insert(Player {
             health: INITIAL_HEALTH,
         })
-        .insert(InputDirection(Vec3::ZERO))
+        .insert(MovementInputDirection(Vec3::ZERO))
+        .insert(AimInputDirection(Vec3::ZERO))
         .with_children(|parent| {
             parent
                 .spawn_bundle((Transform::default(), GlobalTransform::identity()))
                 .with_children(|gparent| {
                     gparent.spawn_scene(asset_server.load("tank_bottom.glb#Scene0"));
-                })
+                });
+            parent
+                .spawn_bundle((Transform::default(), GlobalTransform::identity()))
+                .insert(TankTop)
                 .with_children(|gparent| {
                     gparent.spawn_scene(asset_server.load("tank_turret.glb#Scene0"));
                 })
@@ -79,9 +91,9 @@ fn setup_player(
     health_updated.send(PlayerHealthUpdated(INITIAL_HEALTH));
 }
 
-fn handle_player_input(
+fn handle_player_movement_input(
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<&mut InputDirection, With<Player>>,
+    mut query: Query<&mut MovementInputDirection, With<Player>>,
 ) {
     let mut input_direction = query.single_mut();
 
@@ -111,7 +123,7 @@ fn handle_player_input(
 
 fn handle_player_movement(
     time: Res<Time>,
-    mut query: Query<(&InputDirection, &mut Velocity, &Transform), With<Player>>,
+    mut query: Query<(&MovementInputDirection, &mut Velocity, &Transform), With<Player>>,
 ) {
     let (dir, mut velocity, transform) = query.single_mut();
 
@@ -165,6 +177,43 @@ fn handle_player_hit(
 
     events.iter().for_each(|_| {
         player.health -= 1;
+
+        if player.health < 0 {
+            player.health = 0;
+        }
+
         health_updated.send(PlayerHealthUpdated(player.health));
+    });
+}
+
+fn handle_player_aim_input(
+    windows: Res<Windows>,
+    mut query: Query<&mut AimInputDirection, With<Player>>,
+) {
+    let window = windows.get_primary().unwrap();
+
+    if let Some(pos) = window.cursor_position() {
+        let mut input = query.single_mut();
+
+        let middle = Vec2::new(window.width() / 2.0, window.height() / 2.0);
+        let aim_direction = (pos - middle).normalize();
+        input.0 = Vec3::new(aim_direction.x, 0.0, aim_direction.y);
+    }
+}
+
+fn handle_player_aim(
+    aim_query: Query<&AimInputDirection>,
+    mut query: Query<&mut Transform, With<TankTop>>,
+) {
+    let aim = aim_query.single();
+
+    query.iter_mut().for_each(|mut transform| {
+        let angle = if aim.0.x == 0.0 {
+            0.0
+        } else {
+            aim.0.z.atan2(aim.0.x)
+        };
+
+        transform.rotation = Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), angle);
     });
 }
