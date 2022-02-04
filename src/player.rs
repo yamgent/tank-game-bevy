@@ -202,18 +202,21 @@ fn handle_player_aim_input(
 }
 
 fn handle_player_aim(
-    aim_query: Query<&AimInputDirection>,
-    mut query: Query<&mut Transform, With<TankTop>>,
+    mut query: Query<(&mut Transform, &Parent), With<TankTop>>,
+    parent_query: Query<(&Transform, &AimInputDirection), Without<TankTop>>,
 ) {
-    let aim = aim_query.single();
+    query.iter_mut().for_each(|(mut transform, parent)| {
+        let (parent_transform, aim) = parent_query.get(parent.0).unwrap();
 
-    query.iter_mut().for_each(|mut transform| {
+        let parent_facing_direction = parent_transform.local_x();
+        let parent_angle = parent_facing_direction.z.atan2(parent_facing_direction.x);
+
         let angle = if aim.0.x == 0.0 {
             0.0
         } else {
             aim.0.z.atan2(aim.0.x)
         };
 
-        transform.rotation = Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), angle);
+        transform.rotation = Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), angle + parent_angle);
     });
 }
