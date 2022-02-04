@@ -1,7 +1,11 @@
 use bevy::prelude::*;
 use heron::prelude::*;
 
-use crate::{bullets::BulletAssets, game_layer::GameLayer, player::Player};
+use crate::{
+    bullets::{BulletAssets, BulletType},
+    game_layer::GameLayer,
+    player::Player,
+};
 
 pub struct TowerPlugin;
 
@@ -148,6 +152,7 @@ fn shoot_bullets(
                     &bullet_assets,
                     transform.translation + (offset * CUBE_SIZE * 1.25),
                     direction,
+                    BulletType::Tower,
                 );
             }
         });

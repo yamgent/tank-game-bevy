@@ -20,6 +20,7 @@ const BULLET_LIFE: f32 = 30.0; // in case it goes out of range
 pub struct BulletAssets {
     mesh: Handle<Mesh>,
     enemy_material: Handle<StandardMaterial>,
+    player_material: Handle<StandardMaterial>,
 }
 
 #[derive(Component)]
@@ -30,6 +31,11 @@ struct Move {
 #[derive(Component)]
 struct AutoDespawn {
     time_left: f32,
+}
+
+pub enum BulletType {
+    Tower,
+    Player,
 }
 
 fn setup_bullet(
@@ -45,10 +51,12 @@ fn setup_bullet(
         .into(),
     );
     let enemy_material = materials.add(Color::RED.into());
+    let player_material = materials.add(Color::BLUE.into());
 
     commands.insert_resource(BulletAssets {
         mesh,
         enemy_material,
+        player_material,
     });
 }
 
@@ -57,13 +65,19 @@ pub fn spawn_bullet(
     assets: &Res<BulletAssets>,
     position: Vec3,
     direction: Vec3,
+    bullet_type: BulletType,
 ) {
     let direction = direction.normalize();
 
-    commands
-        .spawn_bundle(PbrBundle {
+    let mut entity = commands.spawn();
+
+    entity
+        .insert_bundle(PbrBundle {
             mesh: assets.mesh.clone(),
-            material: assets.enemy_material.clone(),
+            material: match bullet_type {
+                BulletType::Tower => assets.enemy_material.clone(),
+                BulletType::Player => assets.player_material.clone(),
+            },
             transform: Transform {
                 translation: position,
                 ..Default::default()
@@ -79,12 +93,24 @@ pub fn spawn_bullet(
         })
         .insert(AutoDespawn {
             time_left: BULLET_LIFE,
-        })
-        .insert(
-            CollisionLayers::none()
-                .with_group(GameLayer::Bullet)
-                .with_masks(&[GameLayer::Player, GameLayer::World]),
-        );
+        });
+
+    match bullet_type {
+        BulletType::Tower => {
+            entity.insert(
+                CollisionLayers::none()
+                    .with_group(GameLayer::Bullet)
+                    .with_masks(&[GameLayer::Player, GameLayer::World]),
+            );
+        }
+        BulletType::Player => {
+            entity.insert(
+                CollisionLayers::none()
+                    .with_group(GameLayer::Bullet)
+                    .with_masks(&[GameLayer::Tower, GameLayer::World]),
+            );
+        }
+    }
 }
 
 fn move_bullets(time: Res<Time>, mut query: Query<(&mut Transform, &Move)>) {

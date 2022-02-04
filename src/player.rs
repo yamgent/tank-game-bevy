@@ -2,7 +2,11 @@ use bevy::prelude::*;
 use heron::prelude::*;
 use std::f32::consts::PI;
 
-use crate::{bullets::BulletAssets, game_layer::GameLayer, game_ui::PlayerHealthUpdated};
+use crate::{
+    bullets::{BulletAssets, BulletType},
+    game_layer::GameLayer,
+    game_ui::PlayerHealthUpdated,
+};
 
 pub struct PlayerPlugin;
 
@@ -244,6 +248,7 @@ fn handle_player_shoot_input(
             &bullet_assets,
             transform.translation + offset,
             aim,
+            BulletType::Player,
         );
     }
 }
