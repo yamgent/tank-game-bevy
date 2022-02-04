@@ -1,10 +1,12 @@
 mod game_camera;
 mod player;
 mod terrain;
+mod tower;
 
 use crate::game_camera::GameCameraPlugin;
 use crate::player::PlayerPlugin;
 use crate::terrain::TerrainPlugin;
+use crate::tower::TowerPlugin;
 use bevy::prelude::*;
 use heron::prelude::*;
 
@@ -16,5 +18,6 @@ fn main() {
         .add_plugin(GameCameraPlugin)
         .add_plugin(TerrainPlugin)
         .add_plugin(PlayerPlugin)
+        .add_plugin(TowerPlugin)
         .run();
 }

@@ -35,6 +35,10 @@ fn setup_player(mut commands: Commands, asset_server: Res<AssetServer>) {
             half_extends: Vec3::new(4.0, 1.5, 2.0),
             border_radius: None,
         })
+        .insert(PhysicMaterial {
+            density: 2000.0,
+            ..Default::default()
+        })
         .insert(Velocity::default())
         .insert(Player)
         .insert(InputDirection(Vec3::ZERO))
